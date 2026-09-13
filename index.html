@@ -8,7 +8,7 @@
 <style>
 body{
     margin:0;
-    background:#eef3fa;
+    background:#dfe4ea;
     font-family:Arial,sans-serif;
     display:flex;
     justify-content:center;
@@ -19,11 +19,11 @@ body{
 button{
     position:fixed;
     top:20px;
-    padding:12px 20px;
+    padding:15px 25px;
     border:none;
-    border-radius:10px;
+    border-radius:12px;
     color:white;
-    font-size:18px;
+    font-size:24px;
     cursor:pointer;
 }
 
@@ -43,19 +43,18 @@ svg{
 }
 
 .time{
-    font-size:60px;
+    font-size:64px;
     font-weight:bold;
     fill:#222;
 }
 
 .status{
-    font-size:28px;
+    font-size:32px;
     font-weight:bold;
     fill:#222;
 }
 </style>
 </head>
-
 <body>
 
 <button id="startBtn">START</button>
@@ -63,7 +62,6 @@ svg{
 
 <svg viewBox="0 0 500 500">
 
-    <!-- blauw -->
     <circle
         cx="250"
         cy="250"
@@ -75,7 +73,6 @@ svg{
         transform="rotate(-90 250 250)"
     />
 
-    <!-- rood -->
     <circle
         cx="250"
         cy="250"
@@ -88,7 +85,6 @@ svg{
         transform="rotate(-90 250 250)"
     />
 
-    <!-- wijzer -->
     <line
         id="hand"
         x1="250"
@@ -102,26 +98,29 @@ svg{
 
     <circle cx="250" cy="250" r="12" fill="#222"/>
 
-    <text
-        id="emoji"
+    <text id="emoji"
         x="250"
         y="180"
         text-anchor="middle"
-        font-size="70">😊</text>
+        font-size="70">
+        😊
+    </text>
 
-    <text
-        id="timer"
+    <text id="timer"
         x="250"
         y="275"
         text-anchor="middle"
-        class="time">08:00</text>
+        class="time">
+        08:00
+    </text>
 
-    <text
-        id="status"
+    <text id="status"
         x="250"
-        y="335"
+        y="340"
         text-anchor="middle"
-        class="status">Klik op START</text>
+        class="status">
+        Klik op START
+    </text>
 
 </svg>
 
@@ -129,17 +128,16 @@ svg{
 
 const WORK = 8 * 60;
 const MOVE = 2 * 60;
-const TOTAL = WORK + MOVE;
+const TOTAL = 10 * 60;
 
 let startTime = null;
-let previousPhase = "";
+let lastPhase = "";
 
-function bell(){
+function beep(){
 
     try{
 
-        const ctx =
-            new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = new(window.AudioContext || window.webkitAudioContext)();
 
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -147,7 +145,7 @@ function bell(){
         osc.connect(gain);
         gain.connect(ctx.destination);
 
-        osc.frequency.value = 900;
+        osc.frequency.value = 850;
         gain.gain.value = 0.1;
 
         osc.start();
@@ -160,9 +158,11 @@ function startTimer(){
 
     startTime = Math.floor(Date.now()/1000);
 
-    location.hash = startTime;
+    localStorage.setItem("hoekenwerkStart", startTime);
 
-    document.getElementById("startBtn").style.display = "none";
+    document.getElementById("startBtn").style.display="none";
+
+    update();
 }
 
 function update(){
@@ -171,18 +171,73 @@ function update(){
 
     const now = Math.floor(Date.now()/1000);
 
-    const pos =
-        (now - startTime) % TOTAL;
+    const pos = (now - startTime) % TOTAL;
 
     const working = pos < WORK;
 
-    const remain =
-        working
+    const remaining = working
         ? WORK - pos
         : TOTAL - pos;
 
-    const mins = Math.floor(remain / 60);
-    const secs = remain % 60;
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
 
     document.getElementById("timer").textContent =
-        String(mins).padStart(2,
+        String(mins).padStart(2,"0")
+        + ":"
+        + String(secs).padStart(2,"0");
+
+    document.getElementById("emoji").textContent =
+        working ? "😊" : "👣";
+
+    document.getElementById("status").textContent =
+        working ? "WERKEN" : "DOORSCHUIVEN";
+
+    const phase = working ? "work" : "move";
+
+    if(lastPhase && lastPhase !== phase){
+        beep();
+    }
+
+    lastPhase = phase;
+
+    const angle = (pos / TOTAL) * 360;
+
+    document.getElementById("hand")
+        .setAttribute(
+            "transform",
+            `rotate(${angle} 250 250)`
+        );
+}
+
+document.getElementById("startBtn")
+.addEventListener("click", startTimer);
+
+document.getElementById("fsBtn")
+.addEventListener("click", () => {
+
+    if(!document.fullscreenElement){
+        document.documentElement.requestFullscreen();
+    }else{
+        document.exitFullscreen();
+    }
+
+});
+
+const storedStart =
+    localStorage.getItem("hoekenwerkStart");
+
+if(storedStart){
+
+    startTime = parseInt(storedStart);
+
+    document.getElementById("startBtn").style.display="none";
+}
+
+setInterval(update,1000);
+update();
+
+</script>
+
+</body>
+</html>
